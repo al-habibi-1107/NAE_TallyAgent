@@ -2,8 +2,9 @@
   "name": "nae_tallyagent",
   "version": "1.0.0",
   "description": "Tally Agent for NAE",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
+    "start": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Kamil",
@@ -11,6 +12,7 @@
   "dependencies": {
     "axios": "^1.8.4",
     "dotenv": "^16.4.7",
+    "nodemailer": "^6.10.0",
     "xml2js": "^0.6.2"
   }
 }

@@ -1,6 +1,6 @@
 // src/syncService.js
 const axios = require('axios');
-const config = require('./config');
+const config = require('../../config/agent.config');
 
 async function syncDataToServer(data) {
   try {
