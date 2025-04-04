@@ -1,9 +1,152 @@
 // src/tallyService.js
 //const odbc = require('odbc');
+const xml2js = require('xml2js')
 const config = require('../../config/agent.config');
 const axios = require('axios');
 
+const { logWrite } = require('../utils/logger');
 
+
+
+const rp1 = `
+  <ENVELOPE>
+
+  <HEADER>
+
+  <VERSION>1</VERSION>
+
+  <TALLYREQUEST>Export</TALLYREQUEST>
+
+  <TYPE>Data</TYPE>
+
+  <ID>Ledger Vouchers</ID>
+
+  </HEADER>
+
+  <BODY>
+
+  <DESC>
+
+  <STATICVARIABLES>
+
+  <EXPLODEFLAG>Yes</EXPLODEFLAG>
+
+  <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+
+  </STATICVARIABLES>
+
+  </DESC>
+
+  </BODY>
+
+  </ENVELOPE>`;
+
+
+const rp2 = `
+<ENVELOPE>
+
+<HEADER>
+
+<VERSION>1</VERSION>
+
+<TALLYREQUEST>EXPORT</TALLYREQUEST>
+
+<TYPE>OBJECT</TYPE> <SUBTYPE>Ledger Vouchers</SUBTYPE> <ID TYPE="Name">AMAN HARDWARE</ID>
+
+</HEADER>
+
+<BODY>
+
+<DESC>
+
+<STATICVARIABLES><SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT></STATICVARIABLES>
+
+<FETCHLIST>
+
+<FETCH>Name</FETCH>
+
+<FETCH>TNetBalance</FETCH>
+
+<FETCH>LedgerPhone</FETCH>
+
+</FETCHLIST>
+
+<TDL>
+
+<TDLMESSAGE>
+
+<OBJECT NAME="Ledger" ISINITIALIZE="Yes">
+
+<LOCALFORMULA>
+
+TNetBalance: $$AsPositive: $$AmountSubtract: $ClosingBalance: $OpeningBalance
+
+</LOCALFORMULA>
+
+</OBJECT>
+
+</TDLMESSAGE>
+
+</TDL>
+
+</DESC>
+
+</BODY>
+
+</ENVELOPE>
+`
+const rp3 = `
+<ENVELOPE>
+  <HEADER>
+    <TALLYREQUEST>Export Data</TALLYREQUEST>
+  </HEADER>
+  <BODY>
+    <EXPORTDATA>
+      <REQUESTDESC>
+        <STATICVARIABLES>
+          <!--Specify the FROM DATE here-->
+          <SVFROMDATE>20240401</SVFROMDATE>
+          <!--Specify the TO DATE here-->
+          <SVTODATE>20250331</SVTODATE>
+          <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+          <!--Specify the LedgerName here-->
+          <LEDGERNAME>BHARAT ELECTRICAL AZADNAGAR</LEDGERNAME>
+        </STATICVARIABLES>
+        <!--Report Name-->
+        <REPORTNAME>Ledger Vouchers</REPORTNAME>
+      </REQUESTDESC>
+    </EXPORTDATA>
+  </BODY>
+</ENVELOPE>
+`
+const rp4=`
+<ENVELOPE>
+    <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>Export</TALLYREQUEST>
+        <TYPE>Data</TYPE>
+        <ID>LedgerVouchers</ID>
+    </HEADER>
+    <BODY>
+        <DESC>
+            <STATICVARIABLES>
+          <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+          <SVFROMDATE TYPE='Date'>1-4-18</SVFROMDATE>
+          <SVTODATE TYPE='Date'>1-4-18</SVTODATE>
+          <LEDGERNAME></LEDGERNAME>
+            </STATICVARIABLES>
+            <TDL>
+           <TDLMESSAGE>
+           <REPORT Name ='LedgerVouchers' ISMODIFY='YES'>
+           <SET>SVFROMDATE:$$Date:'1-4-24'</SET>
+           <SET>SVTODATE:$$Date:'1-3-25'</SET>
+           </REPORT>
+           </TDLMESSAGE>
+            </TDL>
+        </DESC>
+    </BODY>
+</ENVELOPE>
+`
 /**
  * Helper function to build the XML request envelope.
  * @param {string} reportName - The report name to be fetched (e.g., 'Vendor List', 'Voucher Register', 'Ledger')
@@ -12,24 +155,25 @@ const axios = require('axios');
  * @returns {string} XML string to be sent to Tally.
  */
 function buildXMLRequest(reportName, lastRun, currentRun) {
-  return `
-    <ENVELOPE>
-      <HEADER>
-        <TALLYREQUEST>Export Data</TALLYREQUEST>
-      </HEADER>
-      <BODY>
-        <EXPORTDATA>
-          <REQUESTDESC>
-            <REPORTNAME>${reportName}</REPORTNAME>
-            <STATICVARIABLES>
-              <SVFROMDATE>${lastRun}</SVFROMDATE>
-              <SVTODATE>${currentRun}</SVTODATE>
-            </STATICVARIABLES>
-          </REQUESTDESC>
-        </EXPORTDATA>
-      </BODY>
-    </ENVELOPE>
-  `;
+  return rp4;
+  // return `
+  //   <ENVELOPE>
+  //     <HEADER>
+  //       <TALLYREQUEST>Export Data</TALLYREQUEST>
+  //     </HEADER>
+  //     <BODY>
+  //       <EXPORTDATA>
+  //         <REQUESTDESC>
+  //           <REPORTNAME>${reportName}</REPORTNAME>
+  //           <STATICVARIABLES>
+  //             <SVFROMDATE>${lastRun}</SVFROMDATE>
+  //             <SVTODATE>${currentRun}</SVTODATE>
+  //           </STATICVARIABLES>
+  //         </REQUESTDESC>
+  //       </EXPORTDATA>
+  //     </BODY>
+  //   </ENVELOPE>
+  // `;
 }
 
 /**
@@ -53,8 +197,11 @@ async function fetchDataFromTallyXML(reportName, lastRun, currentRun) {
       }
     );
     const xmlResponse = response.data;
-    const jsonResult = await xml2js.parseStringPromise(xmlResponse, { explicitArray: false });
-    return jsonResult;
+   // console.log(xmlResponse);
+   // logWrite(xmlResponse);
+   const jsonResult = await xml2js.parseStringPromise(xmlResponse, { explicitArray: false });
+    console.log(jsonResult)
+   // return jsonResult;
   } catch (error) {
     console.error(`Error fetching data for report ${reportName} from Tally:`, error.message);
     throw error;
